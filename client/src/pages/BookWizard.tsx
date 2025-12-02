@@ -19,7 +19,7 @@ interface BookData {
 
 export default function BookWizard() {
   const { user } = useAuth();
-  const { canCreateBook, booksCount, maxBooks } = usePlanLimits();
+  const { limits, isLoading } = usePlanLimits();
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<Step>('metadata');
   const [bookData, setBookData] = useState<BookData>({
@@ -34,6 +34,10 @@ export default function BookWizard() {
     return null;
   }
 
+  const canCreateBook = limits?.canCreateBook ?? false;
+  const booksRemaining = limits?.booksRemaining ?? 0;
+  const maxBooks = limits?.plan === 'FREE' ? 1 : 999;
+
   if (!canCreateBook) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -43,7 +47,7 @@ export default function BookWizard() {
           </div>
           <h2 className="text-2xl font-bold text-center mb-4">Límite alcanzado</h2>
           <p className="text-center text-gray-600 mb-6">
-            Ya tienes {booksCount} de {maxBooks} libro{maxBooks !== 1 ? 's' : ''} en tu plan.
+            Ya tienes {maxBooks - booksRemaining} de {maxBooks} libro{maxBooks !== 1 ? 's' : ''} en tu plan.
           </p>
           <Button 
             onClick={() => setLocation('/pricing')}
