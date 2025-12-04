@@ -186,12 +186,12 @@ export class AuthService {
       name: user.name,
       planType: user.planType,
       planActive: user.planActive,
-      subscriptionStartDate: user.subscriptionStartDate,
-      subscriptionEndDate: user.subscriptionEndDate,
+      subscriptionStartDate: user.subscriptionStartDate ? new Date(user.subscriptionStartDate) : null,
+      subscriptionEndDate: user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null,
       stripeCustomerId: user.stripeCustomerId,
       emailVerified: user.emailVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
+      updatedAt: user.updatedAt ? new Date(user.updatedAt) : new Date(),
     };
   }
 }
