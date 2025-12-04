@@ -1,0 +1,5 @@
+BUILD TIMESTAMP: 2025-12-03T23:25:00Z
+Vercel rebuild trigger - commit hash will update
+
+This file forces a new commit to ensure Vercel detects the repository state.
+DO NOT DELETE - This is intentional for deployment purposes.
