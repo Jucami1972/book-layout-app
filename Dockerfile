@@ -1,8 +1,8 @@
-# Use official Node.js runtime as base image
-FROM node:22-alpine
+# Use official Node.js runtime as base image (Debian-based for better compatibility)
+FROM node:22-bookworm
 
 # Install required system dependencies for Puppeteer and other packages
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     fonts-liberation \
     gconf-service \
@@ -47,10 +47,7 @@ RUN apk add --no-cache \
     python3 \
     make \
     g++ \
-    cairo-dev \
-    jpeg-dev \
-    pango-dev \
-    giflib-dev
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
