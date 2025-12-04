@@ -8,7 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Home from "./pages/Home";
 import NewProject from "./pages/NewProject";
 import ProjectEditor from "./pages/ProjectEditor";
-import { LoginPage as Login } from "./pages/Login";
+import Login from "./pages/Login";
 import Register from "./pages/Register";
 import BookWizard from "./pages/BookWizard";
 import BookEditor from "./pages/BookEditor";
