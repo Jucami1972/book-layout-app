@@ -185,33 +185,54 @@ export async function runMigrations() {
       max_lifetime: 60 * 30, // 30 minutes max lifetime
     });
     
+    // Test connection first
+    try {
+      const result = await client`SELECT 1`;
+      console.log("[Migration] ✓ Database connection successful");
+    } catch (connError: any) {
+      console.error("[Migration] ✗ Failed to connect to database:", connError.message);
+      await client.end();
+      return;
+    }
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
     for (const migration of migrations) {
       try {
         // Split by semicolon and execute each statement
         const statements = migration.split(';').filter(s => s.trim());
-        for (const statement of statements) {
+        console.log(`[Migration] Executing ${statements.length} statements...`);
+        
+        for (let i = 0; i < statements.length; i++) {
+          const statement = statements[i];
           if (statement.trim()) {
-            await client.unsafe(statement);
+            try {
+              await client.unsafe(statement);
+              console.log(`[Migration]   ✓ Statement ${i + 1}/${statements.length} executed`);
+            } catch (stmtError: any) {
+              // Log the statement that failed for debugging
+              if (!stmtError.message.includes("already exists")) {
+                console.error(`[Migration]   ✗ Statement ${i + 1} failed:`, stmtError.message);
+                errorCount++;
+              } else {
+                console.log(`[Migration]   ℹ Statement ${i + 1} skipped (already exists)`);
+              }
+            }
           }
         }
-        console.log("[Migration] ✓ Migration executed successfully");
+        successCount++;
+        console.log("[Migration] ✓ Migration batch executed");
       } catch (error: any) {
-        // Ignore errors if tables already exist
-        if (error.message.includes("already exists")) {
-          console.log("[Migration] ℹ Tables already exist, skipping");
-        } else if (error.message.includes("CONNECT_TIMEOUT") || error.message.includes("timeout")) {
-          console.warn("[Migration] Connection timeout, tables might already exist or will be created on next restart");
-          break; // Stop trying if we can't connect
-        } else {
-          console.warn("[Migration] Warning:", error.message);
-        }
+        console.error("[Migration] ✗ Migration batch failed:", error.message);
+        errorCount++;
       }
     }
 
     await client.end();
-    console.log("[Migration] ✓ All migrations completed");
+    console.log(`[Migration] ✓ All migrations completed (${successCount} succeeded, ${errorCount} errors)`);
   } catch (error) {
-    console.error("[Migration] Failed to run migrations:", error);
+    console.error("[Migration] ✗ Failed to run migrations:", error);
     // Don't throw - let the app continue
   }
 }
