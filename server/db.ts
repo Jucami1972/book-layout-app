@@ -1,6 +1,6 @@
 import { eq, and, desc, count } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import {
   InsertUser,
   users,
@@ -11,7 +11,7 @@ import {
   InsertChapter,
   InsertExport,
   subscriptionHistory,
-  references,
+  book_references,
   auditLogs,
 } from "../drizzle/schema";
 
@@ -22,8 +22,12 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db) {
     try {
-      const sqlite = new Database("./book-layout.db");
-      _db = drizzle(sqlite);
+      const connectionString = process.env.DATABASE_URL;
+      if (!connectionString) {
+        throw new Error("DATABASE_URL environment variable not set");
+      }
+      const client = postgres(connectionString);
+      _db = drizzle(client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
