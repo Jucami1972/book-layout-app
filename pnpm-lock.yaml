@@ -252,9 +252,6 @@ importers:
       '@builder.io/vite-plugin-jsx-loc':
         specifier: ^0.1.1
         version: 0.1.1(vite@7.2.6(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
-      '@libsql/client':
-        specifier: ^0.15.15
-        version: 0.15.15
       '@tailwindcss/typography':
         specifier: ^0.5.15
         version: 0.5.19(tailwindcss@4.1.17)
@@ -4149,7 +4146,6 @@ packages:
 
   libsql@0.5.22:
     resolution: {integrity: sha512-NscWthMQt7fpU8lqd7LXMvT9pi+KhhmTHAJWUB/Lj6MWa0MKFv0F2V4C6WKKpjCVZl0VwcDz4nOI3CyaT1DDiA==, tarball: https://registry.npmjs.org/libsql/-/libsql-0.5.22.tgz}
-    cpu: [x64, arm64, wasm32, arm]
     os: [darwin, linux, win32]
 
   lie@3.3.0:
@@ -6706,10 +6702,12 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    optional: true
 
   '@libsql/core@0.15.15':
     dependencies:
       js-base64: 3.7.8
+    optional: true
 
   '@libsql/darwin-arm64@0.5.22':
     optional: true
@@ -6726,8 +6724,10 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    optional: true
 
-  '@libsql/isomorphic-fetch@0.3.1': {}
+  '@libsql/isomorphic-fetch@0.3.1':
+    optional: true
 
   '@libsql/isomorphic-ws@0.1.5':
     dependencies:
@@ -6736,6 +6736,7 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    optional: true
 
   '@libsql/linux-arm-gnueabihf@0.5.22':
     optional: true
@@ -6764,7 +6765,8 @@ snapshots:
     dependencies:
       langium: 3.3.1
 
-  '@neon-rs/load@0.0.4': {}
+  '@neon-rs/load@0.0.4':
+    optional: true
 
   '@puppeteer/browsers@2.11.0':
     dependencies:
@@ -8433,6 +8435,7 @@ snapshots:
   '@types/ws@8.18.1':
     dependencies:
       '@types/node': 24.10.1
+    optional: true
 
   '@types/yauzl@2.10.3':
     dependencies:
@@ -8999,7 +9002,8 @@ snapshots:
       d3: 7.9.0
       lodash-es: 4.17.21
 
-  data-uri-to-buffer@4.0.1: {}
+  data-uri-to-buffer@4.0.1:
+    optional: true
 
   data-uri-to-buffer@6.0.2: {}
 
@@ -9045,7 +9049,8 @@ snapshots:
 
   destroy@1.2.0: {}
 
-  detect-libc@2.0.2: {}
+  detect-libc@2.0.2:
+    optional: true
 
   detect-libc@2.1.2: {}
 
@@ -9432,6 +9437,7 @@ snapshots:
     dependencies:
       node-domexception: 1.0.0
       web-streams-polyfill: 3.3.3
+    optional: true
 
   filelist@1.0.4:
     dependencies:
@@ -9462,6 +9468,7 @@ snapshots:
   formdata-polyfill@4.0.10:
     dependencies:
       fetch-blob: 3.2.0
+    optional: true
 
   forwarded@0.2.0: {}
 
@@ -9781,7 +9788,8 @@ snapshots:
 
   jose@6.1.0: {}
 
-  js-base64@3.7.8: {}
+  js-base64@3.7.8:
+    optional: true
 
   js-tokens@4.0.0: {}
 
@@ -9834,6 +9842,7 @@ snapshots:
       '@libsql/linux-x64-gnu': 0.5.22
       '@libsql/linux-x64-musl': 0.5.22
       '@libsql/win32-x64-msvc': 0.5.22
+    optional: true
 
   lie@3.3.0:
     dependencies:
@@ -10461,7 +10470,8 @@ snapshots:
 
   node-addon-api@8.5.0: {}
 
-  node-domexception@1.0.0: {}
+  node-domexception@1.0.0:
+    optional: true
 
   node-fetch@2.7.0:
     dependencies:
@@ -10472,6 +10482,7 @@ snapshots:
       data-uri-to-buffer: 4.0.1
       fetch-blob: 3.2.0
       formdata-polyfill: 4.0.10
+    optional: true
 
   node-gyp-build@4.8.4: {}
 
@@ -10665,7 +10676,8 @@ snapshots:
 
   progress@2.0.3: {}
 
-  promise-limit@2.7.0: {}
+  promise-limit@2.7.0:
+    optional: true
 
   prop-types@15.8.1:
     dependencies:
@@ -11660,7 +11672,8 @@ snapshots:
 
   web-namespaces@2.0.1: {}
 
-  web-streams-polyfill@3.3.3: {}
+  web-streams-polyfill@3.3.3:
+    optional: true
 
   webdriver-bidi-protocol@0.3.9: {}
 
