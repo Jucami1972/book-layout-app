@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx watch server/_core/index.ts",
-    "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:better-sqlite3 --external:@libsql/client --external:@libsql/eslang --external:sqlite3",
+    "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:better-sqlite3 --external:@libsql/client --external:@libsql/eslang --external:sqlite3 && node scripts/copy-migrations.js",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
@@ -68,6 +68,7 @@
     "epub-gen-memory": "^1.1.2",
     "express": "^4.21.2",
     "framer-motion": "^12.23.22",
+    "fs-extra": "^11.2.0",
     "input-otp": "^1.4.2",
     "jose": "6.1.0",
     "lucide-react": "^0.453.0",
