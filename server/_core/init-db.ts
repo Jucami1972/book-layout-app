@@ -178,7 +178,12 @@ export async function runMigrations() {
 
     console.log("[Migration] Running database migrations...");
     
-    const client = postgres(connectionString);
+    // Configure postgres connection with longer timeouts for migrations
+    const client = postgres(connectionString, {
+      connect_timeout: 15000, // 15 seconds for initial connection
+      idle_timeout: 60, // 60 seconds idle timeout
+      max_lifetime: 60 * 30, // 30 minutes max lifetime
+    });
     
     for (const migration of migrations) {
       try {
@@ -194,6 +199,9 @@ export async function runMigrations() {
         // Ignore errors if tables already exist
         if (error.message.includes("already exists")) {
           console.log("[Migration] ℹ Tables already exist, skipping");
+        } else if (error.message.includes("CONNECT_TIMEOUT") || error.message.includes("timeout")) {
+          console.warn("[Migration] Connection timeout, tables might already exist or will be created on next restart");
+          break; // Stop trying if we can't connect
         } else {
           console.warn("[Migration] Warning:", error.message);
         }

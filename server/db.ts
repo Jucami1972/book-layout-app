@@ -26,7 +26,14 @@ export async function getDb() {
       if (!connectionString) {
         throw new Error("DATABASE_URL environment variable not set");
       }
-      const client = postgres(connectionString);
+      
+      // Configure postgres connection with timeouts
+      const client = postgres(connectionString, {
+        connect_timeout: 10000, // 10 seconds
+        idle_timeout: 30,
+        max_lifetime: 60 * 30, // 30 minutes
+      });
+      
       _db = drizzle(client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
