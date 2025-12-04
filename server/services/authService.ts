@@ -66,10 +66,13 @@ export class AuthService {
     }
 
     // Update last signed in
-    await db.database
-      .update(users)
-      .set({ lastSignedIn: new Date() })
-      .where(eq(users.id, user.id));
+    const database = await db.getDb();
+    if (database) {
+      await database
+        .update(users)
+        .set({ lastSignedIn: new Date() })
+        .where(eq(users.id, user.id));
+    }
 
     // Generate tokens
     const { token, refreshToken } = await this.generateTokens(user.id);

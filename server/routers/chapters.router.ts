@@ -73,7 +73,12 @@ export const chaptersRouter = router({
       // Check plan limits
       await checkCanCreateChapter(ctx.user.id, input.projectId);
 
-      const chapterId = await db.createChapter(input);
+      const now = new Date();
+      const chapterId = await db.createChapter({
+        ...input,
+        createdAt: now,
+        updatedAt: now,
+      });
 
       await createAuditLog({
         userId: ctx.user.id,

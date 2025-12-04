@@ -1,5 +1,6 @@
 import { eq, and, desc, count } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
 import {
   InsertUser,
   users,
@@ -19,9 +20,10 @@ export let database: ReturnType<typeof drizzle>;
 let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  if (!_db) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const sqlite = new Database("./book-layout.db");
+      _db = drizzle(sqlite);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -37,8 +39,10 @@ export async function createProject(project: InsertProject) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(projects).values(project);
-  return result[0].insertId;
+  await db.insert(projects).values(project);
+  // Get the last inserted project by email (or use a different unique identifier)
+  const result = await db.select().from(projects).where(eq(projects.id, project.id!)).limit(1);
+  return result[0]?.id || 0;
 }
 
 export async function getUserProjects(userId: number) {
@@ -90,8 +94,10 @@ export async function createChapter(chapter: InsertChapter) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(chapters).values(chapter);
-  return result[0].insertId;
+  await db.insert(chapters).values(chapter);
+  // Get the last inserted chapter
+  const result = await db.select().from(chapters).where(eq(chapters.id, chapter.id!)).limit(1);
+  return result[0]?.id || 0;
 }
 
 export async function getProjectChapters(projectId: number) {
@@ -139,8 +145,10 @@ export async function createExport(exportRecord: InsertExport) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(exports).values(exportRecord);
-  return result[0].insertId;
+  await db.insert(exports).values(exportRecord);
+  // Get the last inserted export
+  const result = await db.select().from(exports).where(eq(exports.id, exportRecord.id!)).limit(1);
+  return result[0]?.id || 0;
 }
 
 export async function getProjectExports(projectId: number) {
@@ -169,7 +177,7 @@ export async function createUser(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(users).values({
+  await db.insert(users).values({
     email: data.email,
     name: data.name,
     passwordHash: data.passwordHash,
@@ -180,8 +188,12 @@ export async function createUser(data: {
     updatedAt: new Date(),
   });
 
+  // Get the created user by email
+  const result = await db.select().from(users).where(eq(users.email, data.email)).limit(1);
+  if (!result[0]) throw new Error("Failed to create user");
+
   return {
-    id: result[0].insertId,
+    id: result[0].id,
     email: data.email,
     name: data.name,
     planType: data.planType,
@@ -274,15 +286,36 @@ export async function createSubscriptionHistory(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(subscriptionHistory).values({
+  const now = new Date();
+  await db.insert(subscriptionHistory).values({
+    userId: data.userId,
+    oldPlan: data.oldPlan,
+    newPlan: data.newPlan,
+    reason: data.reason,
+    effectiveDate: data.effectiveDate,
+    createdAt: now,
+  });
+
+  // Return the created record (we'll just return the userId as a simple identifier)
+  return data.userId;
+}
+
+// Alias for backward compatibility
+export async function recordSubscriptionChange(data: {
+  userId: number;
+  oldPlan: 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY' | null;
+  newPlan: 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY';
+  reason: 'UPGRADE' | 'DOWNGRADE' | 'CANCELED' | 'RENEWAL' | 'MANUAL_CHANGE';
+  effectiveDate: Date;
+  createdAt?: Date;
+}) {
+  return createSubscriptionHistory({
     userId: data.userId,
     oldPlan: data.oldPlan,
     newPlan: data.newPlan,
     reason: data.reason,
     effectiveDate: data.effectiveDate,
   });
-
-  return result[0].insertId;
 }
 
 // ============ Audit Log Functions ============
@@ -300,14 +333,16 @@ export async function createAuditLog(data: {
   if (!db) return; // Don't throw, just skip
 
   try {
+    const now = new Date();
     await db.insert(auditLogs).values({
       userId: data.userId,
       action: data.action,
       resourceType: data.resourceType,
       resourceId: data.resourceId,
-      details: data.details,
+      details: data.details ? JSON.stringify(data.details) : undefined,
       ipAddress: data.ipAddress,
       userAgent: data.userAgent,
+      createdAt: now,
     });
   } catch (error) {
     console.error('Failed to create audit log:', error);

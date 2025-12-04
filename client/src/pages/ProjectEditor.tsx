@@ -277,7 +277,7 @@ export default function ProjectEditor() {
           </div>
           <div className="p-4">
             <ChapterList
-              chapters={chapters}
+              chapters={chapters as any}
               selectedChapterId={currentChapterId || undefined}
               onSelectChapter={setCurrentChapterId}
               onReorder={handleReorderChapters}

@@ -36,7 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check if user is still authenticated
     if (meQuery.data?.user) {
-      setUser(meQuery.data.user);
+      // Type assertion to ensure planType is correct type
+      const user = meQuery.data.user as User;
+      setUser(user);
       setIsLoading(false);
     } else if (!meQuery.isLoading) {
       setIsLoading(false);

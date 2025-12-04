@@ -316,7 +316,7 @@ export default function ProjectEditorNew() {
               </CardHeader>
               <CardContent>
                 <ChapterList
-                  chapters={chapters}
+                  chapters={chapters as any}
                   selectedChapterId={currentChapterId}
                   onSelectChapter={handleChapterSelect}
                   onReorder={(reorderedChapters) => {

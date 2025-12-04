@@ -17,11 +17,12 @@ export class SubscriptionService {
     const user = await db.getUserById(userId);
     if (!user) throw new Error('Usuario no encontrado');
 
-    const config = PLAN_CONFIG[user.planType];
+    const planType = (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY');
+    const config = PLAN_CONFIG[planType];
     const projectCount = await db.countUserProjects(userId);
 
     return {
-      plan: user.planType,
+      plan: planType,
       isActive: user.planActive,
       canCreateBook: projectCount < config.maxBooks,
       booksRemaining: Math.max(0, config.maxBooks - projectCount),
@@ -52,9 +53,9 @@ export class SubscriptionService {
     });
 
     // Log subscription change
-    await db.database.insert(subscriptionHistory).values({
+    await db.recordSubscriptionChange({
       userId,
-      oldPlan: user.planType,
+      oldPlan: (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY' | null),
       newPlan: 'PRO_MONTHLY',
       reason: 'UPGRADE',
       effectiveDate: new Date(),
@@ -82,9 +83,9 @@ export class SubscriptionService {
     });
 
     // Log subscription change
-    await db.database.insert(subscriptionHistory).values({
+    await db.recordSubscriptionChange({
       userId,
-      oldPlan: user.planType,
+      oldPlan: (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY' | null),
       newPlan: 'PRO_YEARLY',
       reason: 'UPGRADE',
       effectiveDate: new Date(),
@@ -115,9 +116,9 @@ export class SubscriptionService {
     });
 
     // Log subscription change
-    await db.database.insert(subscriptionHistory).values({
+    await db.recordSubscriptionChange({
       userId,
-      oldPlan: user.planType,
+      oldPlan: (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY' | null),
       newPlan: 'FREE',
       reason: 'DOWNGRADE',
       effectiveDate: new Date(),
@@ -145,7 +146,8 @@ export class SubscriptionService {
     const user = await db.getUserById(userId);
     if (!user) throw new Error('Usuario no encontrado');
 
-    const config = PLAN_CONFIG[user.planType];
+    const planType = (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY');
+    const config = PLAN_CONFIG[planType];
     const chapterCount = await db.countProjectChapters(projectId);
 
     return chapterCount < config.maxChaptersPerBook;
@@ -158,7 +160,8 @@ export class SubscriptionService {
     const user = await db.getUserById(userId);
     if (!user) throw new Error('Usuario no encontrado');
 
-    const config = PLAN_CONFIG[user.planType];
+    const planType = (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY');
+    const config = PLAN_CONFIG[planType];
     return config.canExport;
   }
 
@@ -169,7 +172,8 @@ export class SubscriptionService {
     const user = await db.getUserById(userId);
     if (!user) throw new Error('Usuario no encontrado');
 
-    const config = PLAN_CONFIG[user.planType];
+    const planType = (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY');
+    const config = PLAN_CONFIG[planType];
     return config.canUploadCover;
   }
 

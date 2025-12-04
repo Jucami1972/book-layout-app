@@ -51,6 +51,7 @@ export const exportRouter = router({
           fileKey,
           fileSize: pdfBuffer.length,
           status: 'completed',
+          createdAt: new Date(),
         });
 
         await createAuditLog({
@@ -117,6 +118,7 @@ export const exportRouter = router({
           fileKey,
           fileSize: epubBuffer.length,
           status: 'completed',
+          createdAt: new Date(),
         });
 
         await createAuditLog({

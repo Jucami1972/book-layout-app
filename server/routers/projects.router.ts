@@ -66,9 +66,12 @@ export const projectsRouter = router({
       // Check plan limits
       await checkCanCreateProject(ctx.user.id);
 
+      const now = new Date();
       const projectId = await db.createProject({
         userId: ctx.user.id,
         ...input,
+        createdAt: now,
+        updatedAt: now,
       });
 
       // Audit log
