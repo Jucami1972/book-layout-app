@@ -1,1 +1,1 @@
-{"version":"7","dialect":"sqlite","entries":[]}
+{"version":"7","dialect":"postgresql","entries":[{"idx":0,"version":"5","when":1733308000000,"tag":"0001_initial_schema","breakpoints":true}]}

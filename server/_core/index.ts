@@ -6,8 +6,12 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { runMigrations } from "./init-db";
 
 async function startServer() {
+  // Run database migrations first
+  await runMigrations();
+
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
