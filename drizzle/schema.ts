@@ -150,7 +150,7 @@ export type InsertChapter = typeof chapters.$inferInsert;
 // REFERENCES TABLE (Bibliography)
 // ============================================
 export const references = pgTable(
-  "references",
+  "book_references",
   {
     id: serial("id").primaryKey(),
     projectId: integer("projectId").notNull(),
@@ -166,8 +166,8 @@ export const references = pgTable(
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
   (table) => ({
-    projectIdIdx: index("references_projectId_idx").on(table.projectId),
-    chapterIdIdx: index("references_chapterId_idx").on(table.chapterId),
+    projectIdIdx: index("book_references_projectId_idx").on(table.projectId),
+    chapterIdIdx: index("book_references_chapterId_idx").on(table.chapterId),
   })
 );
 

@@ -97,7 +97,7 @@ CREATE INDEX IF NOT EXISTS chapters_projectId_idx ON chapters(projectId);
 CREATE INDEX IF NOT EXISTS chapters_orderIndex_idx ON chapters(orderIndex);
 
 -- Create references table (Bibliography)
-CREATE TABLE IF NOT EXISTS references (
+CREATE TABLE IF NOT EXISTS book_references (
   id SERIAL PRIMARY KEY,
   projectId INTEGER NOT NULL,
   chapterId INTEGER,
@@ -112,8 +112,8 @@ CREATE TABLE IF NOT EXISTS references (
   updatedAt TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS references_projectId_idx ON references(projectId);
-CREATE INDEX IF NOT EXISTS references_chapterId_idx ON references(chapterId);
+CREATE INDEX IF NOT EXISTS book_references_projectId_idx ON book_references(projectId);
+CREATE INDEX IF NOT EXISTS book_references_chapterId_idx ON book_references(chapterId);
 
 -- Create exports table (Export History)
 CREATE TABLE IF NOT EXISTS exports (
