@@ -29,25 +29,31 @@ export async function getDb() {
       }
       
       console.log("[DB] Initializing database connection...");
-      // Configure postgres connection with timeouts
+      // Configure postgres connection with shorter timeout
       const client = postgres(connectionString, {
-        connect_timeout: 10000, // 10 seconds
+        connect_timeout: 5000,  // 5 seconds - fail fast
         idle_timeout: 30,
         max_lifetime: 60 * 30, // 30 minutes
       });
       
       _db = drizzle(client);
       
-      // Run migrations on first connection
+      // Run migrations on first connection with timeout
       if (!_migrationsDone) {
         console.log("[DB] Running migrations...");
-        await runMigrationsInternal(client);
+        await Promise.race([
+          runMigrationsInternal(client),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Migration timeout after 30 seconds')), 30000)
+          )
+        ]);
         _migrationsDone = true;
-        console.log("[DB] Migrations completed");
+        console.log("[DB] Migrations completed successfully");
       }
-    } catch (error) {
-      console.error("[Database] Failed to initialize:", error);
+    } catch (error: any) {
+      console.error("[DB] Failed to initialize:", error.message);
       _db = null;
+      _migrationsDone = false;
       throw error;
     }
   }
