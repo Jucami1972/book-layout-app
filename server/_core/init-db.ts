@@ -3,12 +3,17 @@ import postgres from "postgres";
 export async function runMigrations() {
   try {
     const connectionString = process.env.DATABASE_URL;
+    console.log("[Migration] Running database migrations...");
+    console.log("[Migration] DATABASE_URL exists:", !!connectionString);
+    
     if (!connectionString) {
-      console.warn("[Migration] DATABASE_URL not set, skipping migrations");
+      console.error("[Migration] DATABASE_URL not set, skipping migrations");
       return;
     }
 
-    console.log("[Migration] Running database migrations...");
+    // Log connection string (masked for security)
+    const maskedUrl = connectionString.replace(/:[^@]*@/, ":***@");
+    console.log("[Migration] Connecting to:", maskedUrl);
     
     // Configure postgres connection with longer timeouts for migrations
     const client = postgres(connectionString, {
@@ -19,10 +24,15 @@ export async function runMigrations() {
     
     // Test connection first
     try {
+      console.log("[Migration] Testing database connection...");
       const result = await client`SELECT 1`;
       console.log("[Migration] ✓ Database connection successful");
     } catch (connError: any) {
-      console.error("[Migration] ✗ Failed to connect to database:", connError.message);
+      console.error("[Migration] ✗ Failed to connect to database");
+      console.error("[Migration] Error type:", connError.constructor.name);
+      console.error("[Migration] Error message:", connError.message);
+      console.error("[Migration] Error code:", connError.code);
+      console.error("[Migration] Full error:", JSON.stringify(connError, null, 2));
       await client.end();
       return;
     }
