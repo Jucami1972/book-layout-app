@@ -21,10 +21,6 @@ export async function runMigrations() {
       connect_timeout: 5000,  // 5 seconds - fail fast
       idle_timeout: 10,
       max_lifetime: 60 * 5,
-      socket: {
-        keepalive: false,
-      },
-      ssl: 'require',
     });
     
     // Test connection first with timeout
