@@ -25,54 +25,77 @@ export async function getDb() {
     try {
       const connectionString = process.env.DATABASE_URL;
       if (!connectionString) {
-        throw new Error("DATABASE_URL environment variable not set");
+        console.error("[DB] DATABASE_URL not set");
+        return null;
       }
       
-      console.log("[DB] Initializing database connection...");
-      // Configure postgres connection with VERY SHORT timeout
+      console.log("[DB] Initializing database connection (3s timeout)...");
+      
+      // Create client with very aggressive timeouts
       const client = postgres(connectionString, {
-        connect_timeout: 3000,  // 3 seconds only
-        idle_timeout: 10,
-        max_lifetime: 60 * 5,
-        statement_timeout: 5000, // 5 seconds per query
+        connect_timeout: 3000,
+        idle_timeout: 5,
+        max_lifetime: 60,
+        statement_timeout: 3000,
       });
+      
+      // Test connection immediately with timeout
+      try {
+        console.log("[DB] Testing connection...");
+        const testResult = await Promise.race([
+          client`SELECT 1`,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Connection test timeout')), 3500)
+          )
+        ]);
+        console.log("[DB] ✓ Connection successful");
+      } catch (testError: any) {
+        console.error("[DB] ✗ Connection test failed:", testError.message);
+        await client.end().catch(() => {});
+        return null;
+      }
       
       _db = drizzle(client);
       
-      // Run migrations on first connection with aggressive timeout
+      // Run migrations in background without blocking
       if (!_migrationsDone) {
-        console.log("[DB] Running migrations (with 5 second timeout)...");
-        try {
-          await Promise.race([
-            runMigrationsInternal(client),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Migrations timeout')), 5000)
-            )
-          ]);
-          console.log("[DB] ✓ Migrations completed");
-        } catch (migError: any) {
-          console.warn("[DB] ⚠ Migrations incomplete:", migError.message);
-        }
         _migrationsDone = true;
+        runMigrationsInBackground(client).catch(() => {});
       }
+      
     } catch (error: any) {
       console.error("[DB] Connection error:", error.message);
-      _db = null;
-      throw error;
+      return null;
     }
   }
   return _db;
 }
 
+// Run migrations in background without blocking
+async function runMigrationsInBackground(client: any) {
+  console.log("[DB] Starting background migrations...");
+  try {
+    await Promise.race([
+      runMigrationsInternal(client),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Migrations timeout')), 15000)
+      )
+    ]);
+    console.log("[DB] ✓ Migrations completed");
+  } catch (error: any) {
+    console.warn("[DB] ⚠ Migrations failed (non-blocking):", error.message);
+  }
+}
+
 // Wrapper with timeout for database operations
-async function withDbTimeout<T>(operation: (db: any) => Promise<T>, timeoutMs = 8000): Promise<T> {
+async function withDbTimeout<T>(operation: (db: any) => Promise<T>, timeoutMs = 5000): Promise<T> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database connection unavailable - check DATABASE_URL and network connectivity");
   
   return Promise.race([
     operation(db),
     new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error("Database operation timeout")), timeoutMs)
+      setTimeout(() => reject(new Error("Database query timeout")), timeoutMs)
     )
   ]);
 }
