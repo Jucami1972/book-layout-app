@@ -24,15 +24,21 @@ export const authRouter = router({
     .input(registerSchema)
     .mutation(async ({ input, ctx }) => {
       try {
+        console.log("[Auth] Register attempt:", input.email);
         const result = await authService.register(input);
+        console.log("[Auth] Register success:", input.email);
 
         // Log signup
-        await createAuditLog({
-          userId: result.user.id,
-          action: 'SIGNUP',
-          ipAddress: ctx.ipAddress,
-          userAgent: ctx.userAgent,
-        });
+        try {
+          await createAuditLog({
+            userId: result.user.id,
+            action: 'SIGNUP',
+            ipAddress: ctx.ipAddress,
+            userAgent: ctx.userAgent,
+          });
+        } catch (auditError) {
+          console.warn("[Auth] Audit log failed (non-critical):", auditError);
+        }
 
         return {
           success: true,
@@ -41,6 +47,7 @@ export const authRouter = router({
           refreshToken: result.refreshToken,
         };
       } catch (error: any) {
+        console.error("[Auth] Register failed:", error.message);
         throw new Error(error.message || 'Error en registro');
       }
     }),

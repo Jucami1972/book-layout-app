@@ -22,32 +22,48 @@ export class AuthService {
    * Register a new user
    */
   async register(data: RegisterRequest) {
+    console.log("[AuthService] Starting registration for:", data.email);
+    
     // Check if email exists
-    const existing = await db.getUserByEmail(data.email);
-    if (existing) {
-      throw new Error('El email ya está registrado');
+    try {
+      const existing = await db.getUserByEmail(data.email);
+      if (existing) {
+        throw new Error('El email ya está registrado');
+      }
+    } catch (error: any) {
+      if (error.message === 'El email ya está registrado') throw error;
+      console.error("[AuthService] Check email failed:", error.message);
+      throw new Error('No se pudo verificar el email. Intenta más tarde.');
     }
 
     // Hash password
+    console.log("[AuthService] Hashing password...");
     const passwordHash = await bcrypt.hash(data.password, 10);
 
     // Create user with FREE plan by default
-    const user = await db.createUser({
-      email: data.email,
-      name: data.name,
-      passwordHash,
-      planType: 'FREE',
-      planActive: true,
-    });
+    console.log("[AuthService] Creating user...");
+    try {
+      const user = await db.createUser({
+        email: data.email,
+        name: data.name,
+        passwordHash,
+        planType: 'FREE',
+        planActive: true,
+      });
+      console.log("[AuthService] User created:", user.id);
 
-    // Generate tokens
-    const { token, refreshToken } = await this.generateTokens(user.id);
+      // Generate tokens
+      const { token, refreshToken } = await this.generateTokens(user.id);
 
-    return {
-      user: this.sanitizeUser(user),
-      token,
-      refreshToken,
-    };
+      return {
+        user: this.sanitizeUser(user),
+        token,
+        refreshToken,
+      };
+    } catch (error: any) {
+      console.error("[AuthService] User creation failed:", error.message);
+      throw new Error('Error al crear la cuenta. Intenta más tarde.');
+    }
   }
 
   /**
