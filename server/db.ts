@@ -209,10 +209,15 @@ async function runMigrationsInternal(client: any) {
   for (let i = 0; i < createTablesSQL.length; i++) {
     try {
       await client.unsafe(createTablesSQL[i]);
-      console.log(`[DB] Migration ${i + 1}/${createTablesSQL.length} completed`);
+      console.log(`[DB] ✓ Statement ${i + 1}/${createTablesSQL.length}`);
     } catch (error: any) {
-      if (!error.message.includes("already exists")) {
-        console.error(`[DB] Migration ${i + 1} error:`, error.message);
+      const errorMsg = error?.message || error?.toString?.() || JSON.stringify(error);
+      if (!errorMsg.includes("already exists") && !errorMsg.includes("duplicate key")) {
+        console.error(`[DB] ✗ Statement ${i + 1}/${createTablesSQL.length} failed`);
+        console.error(`[DB]   Error:`, errorMsg);
+        console.error(`[DB]   SQL:`, createTablesSQL[i].substring(0, 100) + "...");
+      } else {
+        console.log(`[DB] ℹ Statement ${i + 1}/${createTablesSQL.length} (already exists)`);
       }
     }
   }
