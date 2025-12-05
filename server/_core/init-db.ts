@@ -1,40 +1,39 @@
-import postgres from "postgres";
-
+// Migration is now handled in db.ts on first connection
 export async function runMigrations() {
-  let client: any;
-  try {
-    const connectionString = process.env.DATABASE_URL;
-    console.log("[Migration] Running database migrations...");
-    console.log("[Migration] DATABASE_URL exists:", !!connectionString);
-    
-    if (!connectionString) {
-      console.error("[Migration] DATABASE_URL not set, skipping migrations");
-      return;
-    }
+  console.log("[Migration] Migrations will run on first database query");
+}
 
     // Log connection string (masked for security)
     const maskedUrl = connectionString.replace(/:[^@]*@/, ":***@");
     console.log("[Migration] Connecting to:", maskedUrl);
     
-    // Configure postgres connection with shorter initial timeout
+    // Configure postgres connection
     client = postgres(connectionString, {
-      connect_timeout: 5000,  // 5 seconds - fail fast
+      connect_timeout: 3000,  // 3 seconds
       idle_timeout: 10,
       max_lifetime: 60 * 5,
     });
     
-    // Test connection first with timeout
+    // Test connection with short timeout
     try {
       console.log("[Migration] Testing database connection...");
-      console.log("[Migration] Sending test query...");
-      
-      const testPromise = client`SELECT 1`;
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
-      );
-      
-      const result = await Promise.race([testPromise, timeoutPromise]);
+      await Promise.race([
+        client`SELECT 1`,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection timeout')), 5000)
+        )
+      ]);
       console.log("[Migration] ✓ Database connection successful");
+    } catch (connError: any) {
+      console.error("[Migration] ✗ Connection failed:", connError.message);
+      console.error("[Migration] Will continue without migrations - tables will be created on first query");
+      if (client) {
+        try {
+          await client.end().catch(() => {});
+        } catch (e) {}
+      }
+      return;
+    }
     } catch (connError: any) {
       console.error("[Migration] ✗ Failed to connect to database");
       console.error("[Migration] Error type:", connError.constructor.name);
