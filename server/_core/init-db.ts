@@ -1,6 +1,7 @@
 import postgres from "postgres";
 
 export async function runMigrations() {
+  let client: any;
   try {
     const connectionString = process.env.DATABASE_URL;
     console.log("[Migration] Running database migrations...");
@@ -16,7 +17,7 @@ export async function runMigrations() {
     console.log("[Migration] Connecting to:", maskedUrl);
     
     // Configure postgres connection with longer timeouts for migrations
-    const client = postgres(connectionString, {
+    client = postgres(connectionString, {
       connect_timeout: 15000,
       idle_timeout: 60,
       max_lifetime: 60 * 30,
@@ -33,7 +34,7 @@ export async function runMigrations() {
       console.error("[Migration] Error message:", connError.message);
       console.error("[Migration] Error code:", connError.code);
       console.error("[Migration] Full error:", JSON.stringify(connError, null, 2));
-      await client.end();
+      if (client) await client.end().catch(() => {});
       return;
     }
     
@@ -226,9 +227,20 @@ export async function runMigrations() {
       }
     }
 
-    await client.end();
+    if (client) {
+      try {
+        await client.end();
+      } catch (closeError: any) {
+        console.error("[Migration] Error closing database connection:", closeError.message);
+      }
+    }
     console.log(`[Migration] ✓ All migrations completed - ${successCount} created, ${skipCount} skipped`);
   } catch (error: any) {
     console.error("[Migration] ✗ Critical migration error:", error);
+    if (client) {
+      try {
+        await client.end().catch(() => {});
+      } catch (e) {}
+    }
   }
 }
