@@ -16,17 +16,28 @@ export async function runMigrations() {
     const maskedUrl = connectionString.replace(/:[^@]*@/, ":***@");
     console.log("[Migration] Connecting to:", maskedUrl);
     
-    // Configure postgres connection with longer timeouts for migrations
+    // Configure postgres connection with shorter initial timeout
     client = postgres(connectionString, {
-      connect_timeout: 15000,
-      idle_timeout: 60,
-      max_lifetime: 60 * 30,
+      connect_timeout: 5000,  // 5 seconds - fail fast
+      idle_timeout: 10,
+      max_lifetime: 60 * 5,
+      socket: {
+        keepalive: false,
+      },
+      ssl: 'require',
     });
     
-    // Test connection first
+    // Test connection first with timeout
     try {
       console.log("[Migration] Testing database connection...");
-      const result = await client`SELECT 1`;
+      console.log("[Migration] Sending test query...");
+      
+      const testPromise = client`SELECT 1`;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
+      );
+      
+      const result = await Promise.race([testPromise, timeoutPromise]);
       console.log("[Migration] ✓ Database connection successful");
     } catch (connError: any) {
       console.error("[Migration] ✗ Failed to connect to database");
