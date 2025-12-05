@@ -426,8 +426,9 @@ export async function createUser(data: {
       email: data.email,
       name: data.name,
       planType: data.planType,
-    planActive: data.planActive,
-  };
+      planActive: data.planActive,
+    };
+  });
 }
 
 export async function getUserById(userId: number) {
