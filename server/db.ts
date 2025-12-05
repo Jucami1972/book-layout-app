@@ -25,7 +25,7 @@ export async function getDb() {
     try {
       const connectionString = process.env.DATABASE_URL;
       if (!connectionString) {
-        console.error("[DB] DATABASE_URL not set");
+        console.warn("[DB] DATABASE_URL not set - database operations will fail");
         return null;
       }
       
@@ -33,10 +33,10 @@ export async function getDb() {
       
       // Create client with very aggressive timeouts
       const client = postgres(connectionString, {
-        connect_timeout: 3000,
+        connect_timeout: 2000,  // 2 seconds only
         idle_timeout: 5,
         max_lifetime: 60,
-        statement_timeout: 3000,
+        statement_timeout: 2000,
       });
       
       // Test connection immediately with timeout
@@ -45,26 +45,30 @@ export async function getDb() {
         const testResult = await Promise.race([
           client`SELECT 1`,
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Connection test timeout')), 3500)
+            setTimeout(() => reject(new Error('Connection timeout')), 2500)
           )
         ]);
         console.log("[DB] ✓ Connection successful");
+        
+        _db = drizzle(client);
+        
+        // Run migrations in background
+        if (!_migrationsDone) {
+          _migrationsDone = true;
+          runMigrationsInBackground(client).catch(() => {});
+        }
       } catch (testError: any) {
-        console.error("[DB] ✗ Connection test failed:", testError.message);
-        await client.end().catch(() => {});
+        console.error("[DB] ✗ Connection failed:", testError.message);
+        console.error("[DB] DATABASE_URL:", connectionString.substring(0, 50) + "...");
+        try {
+          await client.end().catch(() => {});
+        } catch (e) {}
+        // Don't throw - return null to allow app to continue
         return null;
       }
       
-      _db = drizzle(client);
-      
-      // Run migrations in background without blocking
-      if (!_migrationsDone) {
-        _migrationsDone = true;
-        runMigrationsInBackground(client).catch(() => {});
-      }
-      
     } catch (error: any) {
-      console.error("[DB] Connection error:", error.message);
+      console.error("[DB] Setup error:", error.message);
       return null;
     }
   }

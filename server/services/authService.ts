@@ -33,7 +33,11 @@ export class AuthService {
     } catch (error: any) {
       if (error.message === 'El email ya está registrado') throw error;
       console.error("[AuthService] Check email failed:", error.message);
-      throw new Error('No se pudo verificar el email. Intenta más tarde.');
+      // If it's a connection error, provide helpful message
+      if (error.message.includes('unavailable') || error.message.includes('timeout')) {
+        throw new Error('La base de datos no está disponible. Por favor intenta más tarde.');
+      }
+      throw new Error('Error verificando email. Intenta más tarde.');
     }
 
     // Hash password
@@ -62,6 +66,9 @@ export class AuthService {
       };
     } catch (error: any) {
       console.error("[AuthService] User creation failed:", error.message);
+      if (error.message.includes('unavailable') || error.message.includes('timeout')) {
+        throw new Error('No pudimos crear tu cuenta. La base de datos no responde. Intenta de nuevo en unos minutos.');
+      }
       throw new Error('Error al crear la cuenta. Intenta más tarde.');
     }
   }
