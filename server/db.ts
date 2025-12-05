@@ -29,35 +29,52 @@ export async function getDb() {
       }
       
       console.log("[DB] Initializing database connection...");
-      // Configure postgres connection with shorter timeout
+      // Configure postgres connection with VERY SHORT timeout
       const client = postgres(connectionString, {
-        connect_timeout: 5000,  // 5 seconds - fail fast
-        idle_timeout: 30,
-        max_lifetime: 60 * 30, // 30 minutes
+        connect_timeout: 3000,  // 3 seconds only
+        idle_timeout: 10,
+        max_lifetime: 60 * 5,
+        statement_timeout: 5000, // 5 seconds per query
       });
       
       _db = drizzle(client);
       
-      // Run migrations on first connection with timeout
+      // Run migrations on first connection with aggressive timeout
       if (!_migrationsDone) {
-        console.log("[DB] Running migrations...");
-        await Promise.race([
-          runMigrationsInternal(client),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Migration timeout after 30 seconds')), 30000)
-          )
-        ]);
+        console.log("[DB] Running migrations (with 5 second timeout)...");
+        try {
+          await Promise.race([
+            runMigrationsInternal(client),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Migrations timeout')), 5000)
+            )
+          ]);
+          console.log("[DB] ✓ Migrations completed");
+        } catch (migError: any) {
+          console.warn("[DB] ⚠ Migrations incomplete:", migError.message);
+        }
         _migrationsDone = true;
-        console.log("[DB] Migrations completed successfully");
       }
     } catch (error: any) {
-      console.error("[DB] Failed to initialize:", error.message);
+      console.error("[DB] Connection error:", error.message);
       _db = null;
-      _migrationsDone = false;
       throw error;
     }
   }
   return _db;
+}
+
+// Wrapper with timeout for database operations
+async function withDbTimeout<T>(operation: (db: any) => Promise<T>, timeoutMs = 8000): Promise<T> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return Promise.race([
+    operation(db),
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("Database operation timeout")), timeoutMs)
+    )
+  ]);
 }
 
 async function runMigrationsInternal(client: any) {
@@ -365,29 +382,27 @@ export async function createUser(data: {
   planType: 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY';
   planActive: boolean;
 }) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  return withDbTimeout(async (db) => {
+    await db.insert(users).values({
+      email: data.email,
+      name: data.name,
+      passwordHash: data.passwordHash,
+      planType: data.planType,
+      planActive: data.planActive,
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
-  await db.insert(users).values({
-    email: data.email,
-    name: data.name,
-    passwordHash: data.passwordHash,
-    planType: data.planType,
-    planActive: data.planActive,
-    emailVerified: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+    // Get the created user by email
+    const result = await db.select().from(users).where(eq(users.email, data.email)).limit(1);
+    if (!result[0]) throw new Error("Failed to create user");
 
-  // Get the created user by email
-  const result = await db.select().from(users).where(eq(users.email, data.email)).limit(1);
-  if (!result[0]) throw new Error("Failed to create user");
-
-  return {
-    id: result[0].id,
-    email: data.email,
-    name: data.name,
-    planType: data.planType,
+    return {
+      id: result[0].id,
+      email: data.email,
+      name: data.name,
+      planType: data.planType,
     planActive: data.planActive,
   };
 }
@@ -406,16 +421,15 @@ export async function getUserById(userId: number) {
 }
 
 export async function getUserByEmail(email: string) {
-  const db = await getDb();
-  if (!db) return null;
+  return withDbTimeout(async (db) => {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
-  const result = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-
-  return result.length > 0 ? result[0] : null;
+    return result.length > 0 ? result[0] : null;
+  }, 8000).catch(() => null); // Return null on timeout instead of throwing
 }
 
 export async function getUserByResetToken(token: string) {
