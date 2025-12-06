@@ -37,19 +37,37 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-const trpcClient = trpc.createClient({
-  links: [
-    httpBatchLink({
-      url: "/api/trpc",
-      transformer: superjson,
-      fetch(input, init) {
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-        });
-      },
-    }),
-  ],
+// Create tRPC client with dynamic token headers
+const createTrpcClient = () => {
+  return trpc.createClient({
+    links: [
+      httpBatchLink({
+        url: "/api/trpc",
+        transformer: superjson,
+        fetch(input, init) {
+          const token = localStorage.getItem('accessToken');
+          return globalThis.fetch(input, {
+            ...(init ?? {}),
+            credentials: "include",
+            headers: {
+              ...(init?.headers || {}),
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+        },
+      }),
+    ],
+  });
+};
+
+let trpcClient = createTrpcClient();
+
+// Watch for token changes and recreate client if needed
+window.addEventListener('storage', (e) => {
+  if (e.key === 'accessToken') {
+    trpcClient = createTrpcClient();
+    queryClient.clear();
+  }
 });
 
 createRoot(document.getElementById("root")!).render(
