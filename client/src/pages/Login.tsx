@@ -11,16 +11,16 @@ export function LoginPage() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
 
-  // Redirect to dashboard if already logged in
+  // Redirect to home if already logged in
   useEffect(() => {
     if (user) {
-      setLocation('/dashboard');
+      setLocation('/');
     }
   }, [user, setLocation]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
-      <LoginForm onSuccess={() => setLocation('/dashboard')} />
+      <LoginForm onSuccess={() => setLocation('/')} />
     </div>
   );
 }
