@@ -149,18 +149,38 @@ export class SubscriptionService {
    * Check if user can create a new chapter
    */
   async canCreateChapter(userId: number, projectId: number): Promise<boolean> {
-    const project = await db.getProjectById(projectId);
-    if (!project) throw new Error('Proyecto no encontrado');
-    if (project.userId !== userId) throw new Error('No autorizado');
+    try {
+      const project = await db.getProjectById(projectId);
+      if (!project) throw new Error('Proyecto no encontrado');
+      if (project.userId !== userId) throw new Error('No autorizado');
 
-    const user = await db.getUserById(userId);
-    if (!user) throw new Error('Usuario no encontrado');
+      const user = await db.getUserById(userId);
+      if (!user) throw new Error('Usuario no encontrado');
 
-    const planType = (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY');
-    const config = PLAN_CONFIG[planType];
-    const chapterCount = await db.countProjectChapters(projectId);
+      const planType = (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY') || 'FREE';
+      const config = PLAN_CONFIG[planType];
+      if (!config) {
+        console.warn('[SubscriptionService] Invalid plan type:', planType);
+        throw new Error(`Plan inválido: ${planType}`);
+      }
 
-    return chapterCount < config.maxChaptersPerBook;
+      const chapterCount = await db.countProjectChapters(projectId);
+      const canCreate = chapterCount < config.maxChaptersPerBook;
+
+      console.log('[SubscriptionService] canCreateChapter:', {
+        userId,
+        projectId,
+        planType,
+        currentChapters: chapterCount,
+        maxChapters: config.maxChaptersPerBook,
+        canCreate,
+      });
+
+      return canCreate;
+    } catch (error) {
+      console.error('[SubscriptionService] canCreateChapter error:', error);
+      throw error;
+    }
   }
 
   /**

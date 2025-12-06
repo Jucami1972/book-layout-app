@@ -49,6 +49,10 @@ export default function ProjectEditor() {
       setCurrentChapterId(data.id);
       toast.success("Capítulo creado");
     },
+    onError: (error: any) => {
+      console.error("[ProjectEditor] Create chapter error:", error);
+      toast.error(error.message || "Error al crear capítulo");
+    },
   });
 
   const deleteChapterMutation = trpc.chapters.delete.useMutation({

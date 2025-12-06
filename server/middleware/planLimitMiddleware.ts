@@ -41,11 +41,20 @@ export async function checkCanCreateProject(userId: number) {
  * Check if user can create a new chapter
  */
 export async function checkCanCreateChapter(userId: number, projectId: number) {
-  const canCreate = await subscriptionService.canCreateChapter(userId, projectId);
-  if (!canCreate) {
+  try {
+    const canCreate = await subscriptionService.canCreateChapter(userId, projectId);
+    if (!canCreate) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Has alcanzado el límite de capítulos. Actualiza a PRO para crear más.',
+      });
+    }
+  } catch (error: any) {
+    console.error('[PlanLimitMiddleware] checkCanCreateChapter error:', error);
+    if (error.code === 'FORBIDDEN') throw error;
     throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Has alcanzado el límite de capítulos. Actualiza a PRO para crear más.',
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Error verificando límites de plan: ' + error.message,
     });
   }
 }
