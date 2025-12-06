@@ -23,27 +23,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [shouldRefreshUser, setShouldRefreshUser] = useState(false);
 
-  const meQuery = trpc.auth.me.useQuery(undefined);
+  const meQuery = trpc.auth.me.useQuery(undefined, {
+    enabled: shouldRefreshUser || !!token,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
 
-  // Load auth from localStorage and verify with server
+  // Load auth from localStorage on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('accessToken');
     
     if (storedToken) {
       setToken(storedToken);
+      setShouldRefreshUser(true);
+    } else {
+      setIsLoading(false);
     }
+  }, []);
 
-    // Check if user is still authenticated
+  // When token is set directly (e.g., after login), refresh user data
+  useEffect(() => {
+    if (token && shouldRefreshUser) {
+      meQuery.refetch();
+      setShouldRefreshUser(false);
+    }
+  }, [token, shouldRefreshUser]);
+
+  // Check if user is still authenticated
+  useEffect(() => {
     if (meQuery.data?.user) {
-      // Type assertion to ensure planType is correct type
       const user = meQuery.data.user as User;
       setUser(user);
       setIsLoading(false);
-    } else if (!meQuery.isLoading) {
+    } else if (!meQuery.isLoading && token) {
+      setIsLoading(false);
+    } else if (!token && !meQuery.isLoading) {
       setIsLoading(false);
     }
-  }, [meQuery.data, meQuery.isLoading]);
+  }, [meQuery.data, meQuery.isLoading, token]);
 
   const value: AuthContextValue = {
     user,

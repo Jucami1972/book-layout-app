@@ -9,18 +9,21 @@ import { useAuth } from '@/hooks/useAuth';
 
 export function RegisterPage() {
   const [, setLocation] = useLocation();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   // Redirect to home if already logged in
   useEffect(() => {
-    if (user) {
+    if (user && token) {
       setLocation('/');
     }
-  }, [user, setLocation]);
+  }, [user, token, setLocation]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
-      <RegisterForm onSuccess={() => setLocation('/')} />
+      <RegisterForm onSuccess={() => {
+        // Wait a bit for context to update, then redirect
+        setTimeout(() => setLocation('/'), 500);
+      }} />
     </div>
   );
 }

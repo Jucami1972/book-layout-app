@@ -9,18 +9,21 @@ import { useAuth } from '@/hooks/useAuth';
 
 export function LoginPage() {
   const [, setLocation] = useLocation();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   // Redirect to home if already logged in
   useEffect(() => {
-    if (user) {
+    if (user && token) {
       setLocation('/');
     }
-  }, [user, setLocation]);
+  }, [user, token, setLocation]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
-      <LoginForm onSuccess={() => setLocation('/')} />
+      <LoginForm onSuccess={() => {
+        // Wait a bit for context to update, then redirect
+        setTimeout(() => setLocation('/'), 500);
+      }} />
     </div>
   );
 }
