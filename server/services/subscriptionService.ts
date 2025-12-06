@@ -14,24 +14,34 @@ export class SubscriptionService {
    * Get user's current plan limits
    */
   async getPlanLimits(userId: number) {
-    const user = await db.getUserById(userId);
-    if (!user) throw new Error('Usuario no encontrado');
+    try {
+      const user = await db.getUserById(userId);
+      if (!user) throw new Error('Usuario no encontrado');
 
-    const planType = (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY');
-    const config = PLAN_CONFIG[planType];
-    const projectCount = await db.countUserProjects(userId);
+      const planType = (user.planType as 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY') || 'FREE';
+      const config = PLAN_CONFIG[planType];
+      if (!config) {
+        console.warn('[SubscriptionService] Invalid plan type:', planType);
+        throw new Error(`Plan inválido: ${planType}`);
+      }
 
-    return {
-      plan: planType,
-      isActive: user.planActive,
-      canCreateBook: projectCount < config.maxBooks,
-      booksRemaining: Math.max(0, config.maxBooks - projectCount),
-      maxChaptersPerBook: config.maxChaptersPerBook,
-      canExport: config.canExport,
-      canUploadCover: config.canUploadCover,
-      canUseAI: config.canUseAI,
-      supportLevel: config.supportLevel,
-    };
+      const projectCount = await db.countUserProjects(userId);
+
+      return {
+        plan: planType,
+        isActive: user.planActive,
+        canCreateBook: projectCount < config.maxBooks,
+        booksRemaining: Math.max(0, config.maxBooks - projectCount),
+        maxChaptersPerBook: config.maxChaptersPerBook,
+        canExport: config.canExport,
+        canUploadCover: config.canUploadCover,
+        canUseAI: config.canUseAI,
+        supportLevel: config.supportLevel,
+      };
+    } catch (error) {
+      console.error('[SubscriptionService] getPlanLimits error:', error);
+      throw error;
+    }
   }
 
   /**

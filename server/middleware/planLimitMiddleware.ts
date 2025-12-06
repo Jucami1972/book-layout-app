@@ -19,11 +19,20 @@ export class PlanLimitError extends Error {
  * Check if user can create a new project
  */
 export async function checkCanCreateProject(userId: number) {
-  const canCreate = await subscriptionService.canCreateProject(userId);
-  if (!canCreate) {
+  try {
+    const canCreate = await subscriptionService.canCreateProject(userId);
+    if (!canCreate) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Has alcanzado el límite de libros. Actualiza a PRO para crear más.',
+      });
+    }
+  } catch (error: any) {
+    console.error('[PlanLimitMiddleware] checkCanCreateProject error:', error);
+    if (error.code === 'FORBIDDEN') throw error;
     throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Has alcanzado el límite de libros. Actualiza a PRO para crear más.',
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Error verificando límites de plan: ' + error.message,
     });
   }
 }
